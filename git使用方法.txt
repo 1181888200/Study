@@ -1,0 +1,24 @@
+
+
+第一步：初始化本地git
+	git init
+	
+第二步：和github远程库关联起来，起个名lwl
+	git remote add lwl https://github.com/1181888200/test.git
+	
+第三步：拉取远程库内容 前提是要先关联起来
+	git pull lwl master
+	
+第四步：本地创建文件，然后将文件添加到暂存区
+	git add 文件名（或者用 . 代替）
+	
+第五步：实际上就是把暂存区的所有内容提交到当前分支
+	git commit  或者  git commit -m "备注信息"
+	
+第六步：将提交的所有东西推送到服务器上
+	git push -u lwl master
+	
+	
+在提交之前，可以通过 it status #查看文件状态，哪些是新增的、哪些是修改的、哪些是删除的、哪些是修改的 
+
+当出现冲突时，可以通过git diff #查看冲突的文件
