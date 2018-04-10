@@ -1,0 +1,142 @@
+nginx配置文件主要分为六个区域：main section、events section、http section、sever section、location section、upstream section。依据这个分类学习nginx的模块。
+
+
+
+细说Nginx系列--前奏
+	什么是Nginx呢？	
+	Nginx 是一个高性能的HTTP和反向代理服务器，也是一个IMAP/POP3/SMTP服务器。
+	Nginx是俄罗斯人编写的十分轻量级的HTTP服务器,Nginx，它的发音为“engine X”， 是一个高性能的HTTP和反向代理服务器，同时也是一个IMAP/POP3/SMTP 代理服务器．Nginx是由俄罗斯人 Igor Sysoev为俄罗斯访问量第二的 Rambler.ru站点开发.
+
+
+	
+	Nginx有什么优点呢？
+	1.占有内存少，并发能力强，事实上nginx的并发能力确实在同类型的网页服务器中表现较好。
+	2.跨平台 Nginx 可以在大多数 UnixLinux OS 上编译运行，并有 Windows 移植版。在连接高并发的情况下，Nginx是Apache服务器不错的替代品。
+	3.作为负载均衡服务器 Nginx采用C进行编写，不论是系统资源开销还是CPU使用效率都比 Perlbal 要好很多。Nginx 是一个安装非常的简单、配置文件非常简洁（还能够支持perl语法）、Bug非常少的服务器。
+	4.Nginx支持热部署 Nginx 启动特别容易，并且几乎可以做到7*24不间断运行，即使运行数个月也不需要重新启动。你还能够不间断服务的情况下进行软件版本的升级。
+	5.作为邮件代理服务器 Nginx 同时也是一个非常优秀的邮件代理服务器（最早开发这个产品的目的之一也是作为邮件代理服务器），Last.fm 描述了成功并且美妙的使用经验。
+ 
+	
+	
+	目前主流的几大web服务器，他们的对比怎么样呢？
+	Lighttpd：Lighttpd是一个具有非常低的内存开销，cpu占用率低，效能好，以及丰富的模块等特点。lighttpd是众多OpenSource轻量级的web server中较为优秀的一个。支持FastCGI, CGI, Auth, 输出压缩(output compress), URL重写, Alias等重要功能。
+	
+	Apache：apache是世界排名第一的web服务器, 根据netcraft所作的调查,世界上百分之五十以上的web服务器在使用apache.
+	
+	Nginx：Nginx 是一个高性能的HTTP和反向代理服务器，也是一个IMAP/POP3/SMTP服务器。
+	
+	server			Apache			Nginx			Lighttpd
+	Proxy代理		非常好			非常好			一般
+	Rewriter		好				非常好			一般
+	Fcgi			不好			好				非常好
+	热部署			不支持			支持			不支持
+	系统压力比较	很大			很小			比较小
+	稳定性			好				非常好			不好
+	安全性			好				一般			一般
+	静态文件处理	一般			非常好			好
+	反向代理		一般			非常好			一般
+
+	Nginx模式
+	Nginx在启动后，在unix系统中会以daemon的方式在后台运行，后台进程包含一个master进程和多个worker进程。
+	Master进程:主要用来管理worker进程，包含：接收来自外界的信号，向各worker进程发送信号，监控worker进程的运行状态，当worker进程退出后(异常情况下)，会自动重新启动新的worker进程。	worker进程:基本的网络事件，则是放在worker进程中来处理了。多个worker进程之间是对等的，他们同等竞争来自客户端的请求，各进程互相之间是独立的。一个请求，只可能在一个worker进程中处理。worker进程的个数是可以设置的，一般我们会设置与机器cpu核数一致（更多的worker数，只会导致进程来竞争cpu资源了，从而带来不必要的上下文切换。与cpu核数一样，刚好利用好计算机的资源）
+	一个完整的请求过程：首先，每个worker进程都是从master进程fork过来，在master进程里面，先建立好需要listen的socket（listenfd）之后，然后再fork出多个worker进程。所有worker进程的listenfd会在新连接到来时变得可读，为保证只有一个进程处理该连接，所有worker进程在注册listenfd读事件前抢accept_mutex，抢到互斥锁那个进程注册listenfd读事件，在读事件里调用accept接受该连接。当一个worker进程在accept这个连接之后，就开始读取请求，解析请求，处理请求，产生数据后，再返回给客户端，最后才断开连接，这样一个完整的请求就是这样的了。
+对于每个worker进程来说，独立的进程，不需要加锁。
+
+
+
+细说Nginx系列-- Nginx配置文件结构
+	Ngnix大概配置结构：
+	main
+	  events   {
+		....
+	  }
+	  http        {
+		....
+		upstream myproject {
+		  .....
+		}
+		server  {
+		  ....
+		  location {
+			  ....
+		  }
+		}
+		server  {
+		  ....
+		  location {
+			  ....
+		  }
+	  }
+	  ....
+	}
+
+	nginx配置文件主要分为六个区域：
+		main(全局设置)
+		主要控制nginx子进程的所属用户/用户组、派生子进程数、错误日志位置/级别、pid位置、子进程优先级、进程对应cpu、进程能够打开的文件描述符数目等。
+		
+		events(nginx工作模式)
+		控制nginx处理连接的方式。
+		
+		http(http设置)
+		是nginx处理http请求的主要配置模块，大多数配置都在这里面进行。
+		
+		sever(主机设置)
+		是nginx中主机的配置块，可以配置多个虚拟主机。
+		
+		location(URL匹配)
+		是server中对应的目录级别的控制块，可以有多个。
+		
+		upstream(负载均衡服务器设置)
+		是nginx做反向代理和负载均衡的配置块，可以有多个。
+	
+
+
+
+细说Nginx系列-- main(全局设置)参数说明
+
+	main module：主要控制子进程的所属用户/用户组、派生子进程数、错误日志位置/级别、pid位置、子进程优先级、进程对应cpu、进程能够打开的文件描述符数目等。
+	
+	user nginx nginx;
+		指定nginx运行的用户及用户组为nginx，默认为nobody [user  nobody;]
+		使用这个参数来配置worker进程的用户和组，如果忽略group，那么group的名字等于该参数指定的用户的用户组
+		
+	worker_processes  1;
+		开启的进程数，一般跟逻辑cpu核数一致 
+		
+		
+	error_log logs/error.log notice;
+		定于全局错误日志文件，级别以notice显示。还有debug、info、warn、error、crit模式，debug输出最多，crit输出最少，更加实际环境而定。
+		
+	pid logs/nginx.pid;
+		指定进程id的存储文件位置 
+		
+	worker_rlimit_nofile 65535;
+		指定一个nginx进程打开的最多文件描述符数目，受系统进程的最大打开文件数量限制
+
+	
+
+细说Nginx系列-- events参数说明
+	
+	event module：
+	控制nginx处理连接的方式。
+	
+	 events { 
+		use epoll; 
+		worker_connections 10240; 
+	}
+	
+	use
+	用来指定Nginx的工作模式。Nginx支持的工作模式有select、poll、kqueue、epoll、rtsig和/dev/poll。其中select和poll都是标准的工作模式，kqueue和epoll是高效的工作模式，不同的是epoll用在Linux平台上，而kqueue用在BSD系统中，因为Mac基于BSD,所以Mac也得用这个模式，对于Linux系统，epoll工作模式是首选。
+ 
+	worker_connections
+	
+	用于定义Nginx每个进程的最大连接数，即接收前端的最大请求数，默认是1024。最大客户端连接数由worker_processes和worker_connections决定，即Max_clients=worker_processes*worker_connections，在作为反向代理时，Max_clients变为：Max_clients = worker_processes * worker_connections/4。进程的最大连接数受Linux系统进程的最大打开文件数限制，在执行操作系统命令“ulimit -n   65536”后worker_connections的设置才能生效。
+
+
+细说Nginx系列-- http参数说明	
+		
+
+
+
+
+
