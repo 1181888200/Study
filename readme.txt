@@ -45,10 +45,9 @@
 		4.6 Spring-boot第六章  思维导图
 			1）log4j日志
 			2) 打包成war包
-				注意点：java当前版本
-						pom文件中编译java的版本
-						maven指向的java版本
-						之前由于java版本不一致问题，导致我在eclipse下tomcat可以正常运行，但是打包成war丢在tomcat下各种异常，所以一定要注意各个java版本要一直
+				注意点：java当前版本、pom文件中编译java的版本、maven指向的java版本 
+				出现问题：之前由于java版本不一致问题，导致我在eclipse下tomcat可以正常运行，
+				但是打包成war丢在tomcat下各种异常，所以一定要注意各个java版本要一致
 						 
 			
 			
